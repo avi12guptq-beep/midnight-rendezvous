@@ -1,0 +1,49 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: unzip -o midnight-rendezvous-apk-project.zip -d .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: midnight-apk-project
+
+      - name: Add Android platform
+        run: npx cap add android
+        working-directory: midnight-apk-project
+
+      - name: Sync web assets
+        run: npx cap sync android
+        working-directory: midnight-apk-project
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+        working-directory: midnight-apk-project
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: midnight-rendezvous-debug-apk
+          path: midnight-apk-project/android/app/build/outputs/apk/debug/app-debug.apk
